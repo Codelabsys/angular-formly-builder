@@ -94,20 +94,26 @@
 
     formBuilder.factory('builderConfig', ['formlyConfig', function (formlyConfig) {
         const typeMap = {};
+        function checkType(component) {
+            if (angular.isUndefined(component.name))
+                throw new Error('field name must be defined check setType ' + JSON.stringify(component));
+            if (angular.isUndefined(component.template) && angular.isUndefined(component.templateUrl))
+                throw new Error('field template or templateUrl must be defined check setType ' + JSON.stringify(component));
+        }
         return {
             setType: function (component) {
                 if (angular.isObject(component)) {
-                    //checkType(component);
+                    checkType(component);
                     typeMap[component.name] = component;
                 } else {
                     throw new Error('Whoops!');
                 }
             },
             getType: function (name) {
-                if (name)
+                if (typeMap[name])
                     return typeMap[name];
                 else {
-                    throw new Error('Whoops!');
+                    throw new Error('The field ' + name + ' is not Registered');
                 }
             }
         };
