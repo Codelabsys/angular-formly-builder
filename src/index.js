@@ -17,6 +17,7 @@
             },
             compile: function (tElement, attrs, transclude) {
 
+                tElement.removeAttr('builder-field-type');
                 tElement.attr('dnd-draggable', 'item');
                 tElement.attr('dnd-effect-allowed', 'move');
                 return {
@@ -34,13 +35,22 @@
         return {
             restrict: 'AE',
             scope: {
+                builderList: '=?'
             },
-            template: '<div style="height: 100%;width: 100%;" dnd-list="builderList">' +
-            '<div  ng-repeat="item in builderList"> {{ item.name }} </div>' +
-            '</div>',
+            template: '<div ng-repeat="item in builderList">{{item.name}}</div>',
             controller: function ($scope) {
                 // check if it was defined.  If not - set a default
-                $scope.builderList = [];
+                $scope.builderList = $scope.builderList || [];
+            },
+            compile: function (tElement, attrs, transclude) {
+                tElement.removeAttr('builder-dropzone');
+                tElement.attr('dnd-list', 'builderList');
+                return {
+                    pre: function preLink(scope, iElement, iAttrs, controller) { },
+                    post: function postLink(scope, iElement, iAttrs, controller) {
+                        $compile(iElement)(scope);
+                    }
+                };
             },
         };
     }]);
