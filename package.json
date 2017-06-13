@@ -1,0 +1,27 @@
+{
+  "name": "angular-formly-builder",
+  "version": "0.0.1",
+  "description": "This library can help you create your GUI form builder easily.",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Codelabsys/angular-formly-builder.git"
+  },
+  "keywords": [
+    "angular",
+    "formly",
+    "builder",
+    "form",
+    "angular-formly",
+    "formly"
+  ],
+  "author": "",
+  "license": "BSD-3-Clause",
+  "bugs": {
+    "url": "https://github.com/Codelabsys/angular-formly-builder/issues"
+  },
+  "homepage": "https://github.com/Codelabsys/angular-formly-builder#readme"
+}
