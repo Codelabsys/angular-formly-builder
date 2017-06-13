@@ -1,19 +1,8 @@
 (function (formBuilder) {
-    formBuilder.directive('builderFieldTypes', ['$compile', function ($compile) {
-        return {
-            restrict: 'AE',
-            transclude: true,
-            scope: {
-            },
-            template: '<div ng-transclude=""></div>',
-            link: function (scope, elem, attr) {
-                //var x = elem.children('builder-field-type');
-                //console.log(x);
-
-            }
-
-        };
-    }]);
+    /**
+     * This directive is responsible for adding drag and drop functionality and sending the
+     *  `builderDropzone` the required object in order to identify the dropped item. 
+     */
     formBuilder.directive('builderFieldType', ['$compile', function ($compile) {
         return {
             restrict: 'A',
@@ -26,13 +15,9 @@
                 $scope.item = $scope.item || { name: $scope.name };
 
             },
-            link: function (scope, elem, attr) {
-
-            },
             compile: function (tElement, attrs, transclude) {
 
                 tElement.attr('dnd-draggable', 'item');
-                tElement.attr('sse', '{{1+1}}');
                 tElement.attr('dnd-effect-allowed', 'move');
                 return {
                     pre: function preLink(scope, iElement, iAttrs, controller) { },
