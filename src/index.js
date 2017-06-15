@@ -76,11 +76,16 @@
             },
             link: function (scope, elem, attr) {
                 let fieldConfig = builderConfig.getType(scope.item.name);
+                let args = arguments;
+                let that = this;
                 getFieldTemplate(fieldConfig).then(function (templateString) {
                     let compieldHtml = $compile(templateString)(scope);
                     elem.append(compieldHtml);
+                }).then(function () {
+                    if (typeof fieldConfig.link === "function")
+                        fieldConfig.link.apply(that, args);
                 }).catch(function (error) {
-                    throw new Error('can not load template ' + error);
+                    throw new Error('can not load type ' + error);
                 });
             },
             controller: function ($scope) {
