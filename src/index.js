@@ -77,7 +77,14 @@
         function invokeController(controller, scope) {
             $controller(controller, { $scope: scope })
         }
-        
+        function freezObjectProperty(object, propertyName, value) {
+            Object.defineProperty(object, propertyName, {
+                value: value,
+                writable: false,
+                enumerable: true,
+                configurable: true
+            });
+        }
         return {
             restrict: 'AE',
             scope: {
@@ -87,6 +94,7 @@
                 let fieldConfig = builderConfig.getType(scope.item.name);
                 let args = arguments;
                 let that = this;
+                freezObjectProperty(scope.item, "name", scope.item.name);
                 getFieldTemplate(fieldConfig).then(function (templateString) {
                     let compieldHtml = $compile(templateString)(scope);
                     elem.append(compieldHtml);
