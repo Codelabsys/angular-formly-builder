@@ -53,24 +53,7 @@
         };
     }]);
 
-    formBuilder.directive('builderDropzoneField', ['$compile', 'builderConfig', '$q', '$templateCache', '$http', function ($compile, builderConfig, $q, $templateCache, $http) {
-        return {
-            restrict: 'AE',
-            scope: {
-                item: '='
-            },
-            link: function (scope, elem, attr) {
-                let fieldConfig = builderConfig.getType(scope.item.name);
-                getFieldTemplate(fieldConfig).then(function (templateString) {
-                    elem.append(templateString);
-                }).catch(function (error) {
-                    throw new Error('can not load template ' + error);
-                });
-            },
-            controller: function ($scope) {
-                //TODO run controllers
-            },
-        };
+    formBuilder.directive('builderDropzoneField', ['$compile', 'builderConfig', '$q', '$templateCache', '$http', '$controller', function ($compile, builderConfig, $q, $templateCache, $http, $controller) {
 
         function getFieldTemplate(component) {
             if (angular.isUndefined(component.template) && angular.isUndefined(component.templateUrl))
@@ -90,6 +73,31 @@
                 }
             }
         }
+
+        function invokeController(controller, scope) {
+            $controller(controller, { $scope: scope })
+        }
+
+        return {
+            restrict: 'AE',
+            scope: {
+                item: '='
+            },
+            link: function (scope, elem, attr) {
+                let fieldConfig = builderConfig.getType(scope.item.name);
+                getFieldTemplate(fieldConfig).then(function (templateString) {
+                    let compieldHtml = $compile(templateString)(scope);
+                    elem.append(compieldHtml);
+                }).catch(function (error) {
+                    throw new Error('can not load template ' + error);
+                });
+            },
+            controller: function ($scope) {
+                let fieldConfig = builderConfig.getType($scope.item.name);
+                if (typeof fieldConfig.controller === "function")
+                    invokeController(fieldConfig.controller, $scope);
+            },
+        };
     }]);
 
     formBuilder.directive('builderFieldConfig', ['$compile', function ($compile) {
@@ -103,20 +111,26 @@
 
     formBuilder.factory('builderConfig', ['formlyConfig', function (formlyConfig) {
         const typeMap = {};
+        function checkType(component) {
+            if (angular.isUndefined(component.name))
+                throw new Error('field name must be defined check setType ' + JSON.stringify(component));
+            if (angular.isUndefined(component.template) && angular.isUndefined(component.templateUrl))
+                throw new Error('field template or templateUrl must be defined check setType ' + JSON.stringify(component));
+        }
         return {
             setType: function (component) {
                 if (angular.isObject(component)) {
-                    //checkType(component);
+                    checkType(component);
                     typeMap[component.name] = component;
                 } else {
                     throw new Error('Whoops!');
                 }
             },
             getType: function (name) {
-                if (name)
+                if (typeMap[name])
                     return typeMap[name];
                 else {
-                    throw new Error('Whoops!');
+                    throw new Error('The field ' + name + ' is not Registered');
                 }
             }
         };
