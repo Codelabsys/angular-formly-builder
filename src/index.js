@@ -68,7 +68,7 @@
         function invokeController(controller, scope) {
             $controller(controller, { $scope: scope })
         }
-
+        
         return {
             restrict: 'AE',
             scope: {
