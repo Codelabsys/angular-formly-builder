@@ -33,13 +33,22 @@
         return {
             restrict: 'AE',
             scope: {
+                builderList: '=?'
             },
-            template: '<div style="height: 100%;width: 100%;" dnd-list="builderList">' +
-            '<div  ng-repeat="item in builderList"> {{ item.name }} </div>' +
-            '</div>',
+            template: '<builder-dropzone-field item="item" dnd-draggable="item"   dnd-moved="builderList.splice($index, 1)" dnd-effect-allowed="move" ng-repeat="item in builderList"/>',
             controller: function ($scope) {
                 // check if it was defined.  If not - set a default
-                $scope.builderList = [];
+                $scope.builderList = $scope.builderList || [];
+            },
+            compile: function (tElement, attrs, transclude) {
+                tElement.removeAttr('builder-dropzone');
+                tElement.attr('dnd-list', 'builderList');
+                return {
+                    pre: function preLink(scope, iElement, iAttrs, controller) { },
+                    post: function postLink(scope, iElement, iAttrs, controller) {
+                        $compile(iElement)(scope);
+                    }
+                };
             },
         };
     }]);
