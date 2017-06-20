@@ -54,10 +54,10 @@
     }]);
 
     formBuilder.directive('builderDropzoneField', ['$compile', 'builderConfig', '$q', '$templateCache', '$http', '$controller', function ($compile, builderConfig, $q, $templateCache, $http, $controller) {
-
+        let check = apiCheck();
         function getFieldTemplate(component) {
             if (angular.isUndefined(component.template) && angular.isUndefined(component.templateUrl))
-                throw new Error('component must have a template or a templateUrl');
+                throw new Error('component ' + component.name + 'must have a template or a templateUrl');
             else {
                 let templatePromise = null;
                 if (component.template)
@@ -66,7 +66,9 @@
                     templatePromise = $q.when(component.templateUrl);
                     const httpOptions = { cache: $templateCache };
                     return templatePromise.then((url) => $http.get(url, httpOptions))
-                        .then((response) => response.data)
+                        .then(function (response) {
+                            return response.data;
+                        })
                         .catch(function (error) {
                             throw new Error('can not load template url ' + error);
                         });
@@ -75,8 +77,10 @@
         }
 
         function invokeController(controller, scope) {
+            check.throw([check.func, check.object], arguments, { prefix: 'builderDropzoneField directive', suffix: "check setType function" });
             $controller(controller, { $scope: scope })
         }
+
         function freezObjectProperty(object, propertyName, value) {
             Object.defineProperty(object, propertyName, {
                 value: value,
@@ -85,16 +89,20 @@
                 configurable: true
             });
         }
+
+        function transcludeInWrappers(fieldConfig) {
+            const wrapper = fieldConfig.wrapper;
+        }
         return {
             restrict: 'AE',
             scope: {
-                item: '='
+                item: '=',
             },
             link: function (scope, elem, attr) {
+                freezObjectProperty(scope.item, "name", scope.item.name);
                 let fieldConfig = builderConfig.getType(scope.item.name);
                 let args = arguments;
                 let that = this;
-                freezObjectProperty(scope.item, "name", scope.item.name);
                 getFieldTemplate(fieldConfig).then(function (templateString) {
                     let compieldHtml = $compile(templateString)(scope);
                     elem.append(compieldHtml);
@@ -102,13 +110,12 @@
                     if (typeof fieldConfig.link === "function")
                         fieldConfig.link.apply(that, args);
                 }).catch(function (error) {
-                    throw new Error('can not load type ' + error);
+                    throw new Error('There was a problem setting the template for this field ' + error);
                 });
             },
             controller: function ($scope) {
                 let fieldConfig = builderConfig.getType($scope.item.name);
-                if (typeof fieldConfig.controller === "function")
-                    invokeController(fieldConfig.controller, $scope);
+                invokeController(fieldConfig.controller, $scope);
             },
         };
     }]);
