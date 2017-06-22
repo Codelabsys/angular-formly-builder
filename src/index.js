@@ -55,24 +55,12 @@
 
     formBuilder.directive('builderDropzoneField', ['$compile', 'builderConfig', '$q', '$templateCache', '$http', '$controller', function ($compile, builderConfig, $q, $templateCache, $http, $controller) {
         let check = apiCheck();
+
         function getFieldTemplate(component) {
             if (angular.isUndefined(component.template) && angular.isUndefined(component.templateUrl))
                 throw new Error('component ' + component.name + 'must have a template or a templateUrl');
             else {
-                let templatePromise = null;
-                if (component.template)
-                    return templatePromise = $q.when(component.template);
-                else if (component.templateUrl) {
-                    templatePromise = $q.when(component.templateUrl);
-                    const httpOptions = { cache: $templateCache };
-                    return templatePromise.then((url) => $http.get(url, httpOptions))
-                        .then(function (response) {
-                            return response.data;
-                        })
-                        .catch(function (error) {
-                            throw new Error('can not load template url ' + error);
-                        });
-                }
+                return getTemplate(component.template || component.templateUrl, !component.template);
             }
         }
 
@@ -90,9 +78,53 @@
             });
         }
 
-        function transcludeInWrappers(fieldConfig) {
-            const wrapper = fieldConfig.wrapper;
+        function getTemplate(template, isUrl) {
+            let templatePromise = $q.when(template);
+            if (!isUrl)
+                return templatePromise;
+            else {
+                const httpOptions = { cache: $templateCache };
+                return templatePromise.then((url) => $http.get(url, httpOptions))
+                    .then(function (response) {
+                        return response.data; //check this later
+                    })
+                    .catch(function (error) {
+                        throw new Error('can not load template url ' + template + ' ' + error);
+                    });
+            }
         }
+
+        function doTransclusion(wrapper, template) {
+            let superWrapper = angular.element('<a></a>');
+            superWrapper.append(wrapper);
+            let transcludeEl = superWrapper.find('transclude');
+            if (!transcludeEl.length)
+                console.warn("can not find transclude tag check your wrapper template " + wrapper);
+            transcludeEl.replaceWith(template);
+            return superWrapper.html();
+        }
+
+        function transcludeInWrappers(fieldConfig) {
+            const wrappers = fieldConfig.wrapper;
+            return function (template) {
+                if (!wrappers)
+                    return $q.when(template);
+                else if (wrappers.length != 0) {
+                    let templatesPromises = wrappers.map(function (wrapper) {
+                        return getTemplate(wrapper, true);
+                    });
+                    return $q.all(templatesPromises).then(function (wrappersTemplates) {
+                        wrappersTemplates.reverse();
+                        let totalWrapper = wrappersTemplates.shift();
+                        wrappersTemplates.forEach(function (wrapper) {
+                            totalWrapper = doTransclusion(totalWrapper, wrapper);
+                        });
+                        return doTransclusion(totalWrapper, template);
+                    });
+                }
+            }
+        }
+
         return {
             restrict: 'AE',
             scope: {
@@ -103,21 +135,24 @@
                 let fieldConfig = builderConfig.getType(scope.item.name);
                 let args = arguments;
                 let that = this;
-                getFieldTemplate(fieldConfig).then(function (templateString) {
-                    let compieldHtml = $compile(templateString)(scope);
-                    elem.append(compieldHtml);
-                }).then(function () {
-                    if (typeof fieldConfig.link === "function")
-                        fieldConfig.link.apply(that, args);
-                }).catch(function (error) {
-                    throw new Error('There was a problem setting the template for this field ' + error);
-                });
+                getFieldTemplate(fieldConfig)
+                    .then(transcludeInWrappers(fieldConfig))
+                    .then(function (templateString) {
+                        let compieldHtml = $compile(templateString)(scope);
+                        elem.append(compieldHtml);
+                    }).then(function () {
+                        if (typeof fieldConfig.link === "function")
+                            fieldConfig.link.apply(that, args);
+                    }).catch(function (error) {
+                        throw new Error('There was a problem setting the template for this field ' + error);
+                    });
             },
             controller: function ($scope) {
                 let fieldConfig = builderConfig.getType($scope.item.name);
                 invokeController(fieldConfig.controller, $scope);
             },
         };
+        
     }]);
 
     formBuilder.directive('builderFieldConfig', ['$compile', function ($compile) {
