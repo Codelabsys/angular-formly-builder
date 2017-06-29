@@ -35,7 +35,7 @@
             scope: {
                 builderList: '=?'
             },
-            template: '<builder-dropzone-field item="item" dnd-draggable="item"   dnd-moved="builderList.splice($index, 1)" dnd-effect-allowed="move" ng-repeat="item in builderList"/>',
+            template: '<builder-dropzone-field item="item" dnd-draggable="item"  dnd-moved="builderList.splice($index, 1)" dnd-effect-allowed="move" ng-repeat="item in builderList"/>',
             controller: function ($scope) {
                 // check if it was defined.  If not - set a default
                 $scope.builderList = $scope.builderList || [];
@@ -86,7 +86,7 @@
                 const httpOptions = { cache: $templateCache };
                 return templatePromise.then((url) => $http.get(url, httpOptions))
                     .then(function (response) {
-                        return response.data; //check this later
+                        return response.data;
                     })
                     .catch(function (error) {
                         throw new Error('can not load template url ' + template + ' ' + error);
