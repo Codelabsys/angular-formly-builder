@@ -17,6 +17,7 @@
                 tElement.removeAttr('builder-field-type');
                 tElement.attr('dnd-draggable', 'item');
                 tElement.attr('dnd-effect-allowed', 'move');
+                tElement.attr('dnd-type', 'name');
                 return {
                     pre: function preLink(scope, iElement, iAttrs, controller) { },
                     post: function postLink(scope, iElement, iAttrs, controller) {
@@ -28,28 +29,39 @@
         };
     }]);
 
-    formBuilder.directive('builderDropzone', ['$compile', function ($compile) {
+    formBuilder.directive('builderDropzone', ['$compile', 'builderConfig', function ($compile, builderConfig) {
         return {
             restrict: 'AE',
             scope: {
                 builderList: '=?',
                 builderName: '@',
-                formFields: '='
+                formFields: '=',
+                shouldRender: '&?'
             },
-            template: '<builder-dropzone-field ng-repeat="item in builderList" item="item" form-field="formFields[$index]" dnd-draggable="item"   dnd-moved="builderList.splice($index, 1)" on-field-removed="onItemRemoved($index)" dnd-effect-allowed="move" />',
+            template: '<builder-dropzone-field ng-repeat="item in builderList" item="item" form-field="formFields[$index]" dnd-draggable="item" dnd-type="item.name"  dnd-moved="builderList.splice($index, 1)" on-field-removed="onItemRemoved($index)" dnd-effect-allowed="move" />',
             controller: function ($scope) {
                 // check if it was defined.  If not - set a default
                 $scope.builderList = $scope.builderList || [];
                 $scope.formFields = new Array($scope.builderList.length);
-
                 //  this adds the form field to `formFields` when the field is dropped to the dropzone 
                 //  the added form field is intitialized by undefined 
                 //  and the `builder-dropzone-field` is resposible for updating this value
-                $scope.onItemAdded = function (index, item, external, type) {
-                    $scope.formFields.splice(index, 0, undefined)
-                    // Return false here to cancel drop. Return true if you insert the item yourself.
-                    return item;
+                //  runs a callback to determine whether an item can be added to the drop zone. If it returns true then the item will be added
+                $scope.onItemAdded = function (event, index, item, external, type) {
+                    let canAddItem = true;
+                    if (typeof $scope.shouldRender == "function")
+                        canAddItem = $scope.shouldRender({ children: $scope.builderList, itemName: type });
+                    if (canAddItem) {
+                        $scope.formFields.splice(index, 0, undefined)
+                        return item;
+                    } else {
+                        // stop Drop event propagation to higher drop zones
+                        event.stopImmediatePropagation();
+                        //stop drop event 
+                        return false;
+                    }
                 };
+
                 /** 
                  *this function is invoked when the `builder-dropzone-field` is destroyed
                  *the `builder-dropzone-field` is mainly destoryed when the item (field) is removed from the `builderList`
@@ -62,7 +74,7 @@
             compile: function (tElement, attrs, transclude) {
                 tElement.removeAttr('builder-dropzone');
                 tElement.attr('dnd-list', 'builderList');
-                tElement.attr('dnd-drop', 'onItemAdded(index, item, external, type)');
+                tElement.attr('dnd-drop', 'onItemAdded(event, index, item, external, type)');
                 return {
                     pre: function preLink(scope, iElement, iAttrs, controller) {
                     },
@@ -82,18 +94,16 @@
         let check = apiCheck();
 
         function getFieldTemplate(component) {
-            if (angular.isUndefined(component.template) && angular.isUndefined(component.templateUrl))
-                throw new Error('component ' + component.name + 'must have a template or a templateUrl');
-            else {
-                return getTemplate(component.template || component.templateUrl, !component.template);
-            }
+            return getTemplate(component.template || component.templateUrl, !component.template);
         }
 
+        //Takes a function injecting controller scope into it then invoke it. Simulating runtime directives
         function invokeController(controller, scope) {
             check.throw([check.func, check.object], arguments, { prefix: 'faild to invoke field controller this may happen if you are not passing a function', suffix: "check setType function" });
             $controller(controller, { $scope: scope })
         }
 
+        //Takes a function injecting link function arguments into it then invoke it. Simulating runtime directives
         function invokeLink(fieldConfig, context, args) {
             let linkFunc = fieldConfig.link;
             return function () {
@@ -106,6 +116,7 @@
             }
         }
 
+        // used to make an object property a const
         function freezObjectProperty(object, propertyName, value) {
             Object.defineProperty(object, propertyName, {
                 value: value,
@@ -115,6 +126,7 @@
             });
         }
 
+        //resolvers html template and return a promise
         function getTemplate(template, isUrl) {
             let templatePromise = $q.when(template);
             if (!isUrl)
@@ -131,6 +143,7 @@
             }
         }
 
+        //search dom tree for a element (transclude) then replaces that element with a new template then return a new html
         function doTransclusion(wrapper, template) {
             let superWrapper = angular.element('<a></a>');
             superWrapper.append(wrapper);
@@ -141,12 +154,14 @@
             return superWrapper.html();
         }
 
+        //Takes a set of html templates then wrap them over the original html template then return a promise
         function transcludeInWrappers(fieldConfig) {
             const wrappers = fieldConfig.wrapper;
             return function (template) {
                 if (!wrappers || wrappers.length == 0)
-                    return $q.when(template);
+                    return $q.when(template); // if no wrappers are provided just return the orginal template
                 else if (Array.isArray(wrappers)) {
+                    //try to resolve html templates will return array of promises
                     let templatesPromises = wrappers.map(function (wrapper) {
                         return getTemplate(wrapper, true);
                     });
@@ -178,6 +193,7 @@
                 let args = arguments;
                 let that = this;
 
+                //link template with scope and invoke custome link function
                 getFieldTemplate(fieldConfig)
                     .then(transcludeInWrappers(fieldConfig))
                     .then(function (templateString) {
@@ -189,9 +205,8 @@
                     });
 
 
-
                 scope.$on('$destroy', function () {
-                    scope.onFieldRemoved();
+                    scope.onFieldRemoved();//callback
                 });
 
             },
@@ -222,8 +237,11 @@
         };
     }]);
 
+    //register and get application components.
     formBuilder.factory('builderConfig', function () {
-        const typeMap = {};
+        const typeMap = {}; // hashmap of components 
+        let check = apiCheck();
+
         function checkType(component) {
             if (angular.isUndefined(component.name))
                 throw new Error('field name must be defined check setType ' + JSON.stringify(component));
@@ -231,19 +249,28 @@
                 throw new Error('field template or templateUrl must be defined check setType ' + JSON.stringify(component));
         }
         return {
+            /*
+            Takes directive definition object with extra properties and saves it to a hashmap. 
+            The object properties will be validated then registered, 
+            keys in the hashmap are lower case. If key exists its value will be overwritten.
+             */
             setType: function (component) {
-                if (angular.isObject(component)) {
-                    checkType(component);
-                    typeMap[component.name] = component;
-                } else {
-                    throw new Error('Whoops!');
-                }
+                check.throw([check.object], arguments, { prefix: 'faild to set new type this may happen if you are not passing an object', suffix: "check setType function" });
+                checkType(component);
+                if (typeMap[component.name.toLowerCase()])
+                    console.warn(component.name + " is registered before it will be overwritten");
+                typeMap[component.name.toLowerCase()] = component;
             },
+            /*
+            Takes component name and gets it from hashmap. name is case insensitive .
+             */
             getType: function (name) {
-                if (typeMap[name])
-                    return typeMap[name];
+                check.throw([check.string], arguments, { prefix: 'faild to get type this may happen if you are not passing an string', suffix: "check getType function" });
+                let lowerCaseName = name.toLowerCase();
+                if (typeMap[lowerCaseName])
+                    return typeMap[lowerCaseName];
                 else {
-                    throw new Error('The field ' + name + ' is not Registered');
+                    throw new Error('The field ' + name + ' is not registered');
                 }
             }
         };
