@@ -36,21 +36,22 @@
                 builderList: '=?',
                 builderName: '@',
                 formFields: '=',
-                shouldRender: '&?'
+                shouldUpdate: '&?'
             },
             template: '<builder-dropzone-field ng-repeat="item in builderList" item="item" form-field="formFields[$index]" dnd-draggable="item" dnd-type="item.name"  dnd-moved="builderList.splice($index, 1)" on-field-removed="onItemRemoved($index)" dnd-effect-allowed="move" />',
             controller: function ($scope) {
                 // check if it was defined.  If not - set a default
                 $scope.builderList = $scope.builderList || [];
                 $scope.formFields = new Array($scope.builderList.length);
+
                 //  this adds the form field to `formFields` when the field is dropped to the dropzone 
                 //  the added form field is intitialized by undefined 
                 //  and the `builder-dropzone-field` is resposible for updating this value
                 //  runs a callback to determine whether an item can be added to the drop zone. If it returns true then the item will be added
                 $scope.onItemAdded = function (event, index, item, external, type) {
                     let canAddItem = true;
-                    if (typeof $scope.shouldRender == "function")
-                        canAddItem = $scope.shouldRender({ children: $scope.builderList, itemName: type });
+                    if (typeof $scope.shouldUpdate == "function")
+                        canAddItem = $scope.shouldUpdate({ children: $scope.builderList, nextComponent: item });
                     if (canAddItem) {
                         $scope.formFields.splice(index, 0, undefined)
                         return item;
@@ -75,6 +76,8 @@
                 tElement.removeAttr('builder-dropzone');
                 tElement.attr('dnd-list', 'builderList');
                 tElement.attr('dnd-drop', 'onItemAdded(event, index, item, external, type)');
+
+
                 return {
                     pre: function preLink(scope, iElement, iAttrs, controller) {
                     },
@@ -204,15 +207,14 @@
                         throw new Error('There was a problem setting the template for this field ' + error + " " + JSON.stringify(fieldConfig));
                     });
 
-
                 scope.$on('$destroy', function () {
                     scope.onFieldRemoved();//callback
                 });
 
             },
             controller: function ($scope) {
-                $scope.formField = { "key": Math.random(), "type": $scope.item.name };
                 let fieldConfig = builderConfig.getType($scope.item.name);
+                $scope.formField = fieldConfig.transform($scope.item, $scope);
                 if (fieldConfig.controller)
                     invokeController(fieldConfig.controller, $scope);
             },
@@ -244,10 +246,13 @@
 
         function checkType(component) {
             if (angular.isUndefined(component.name))
-                throw new Error('field name must be defined check setType ' + JSON.stringify(component));
-            if (angular.isUndefined(component.template) && angular.isUndefined(component.templateUrl))
-                throw new Error('field template or templateUrl must be defined check setType ' + JSON.stringify(component));
+                throw new Error('field name must be defined check setType of ' + JSON.stringify(component));
+            else if (angular.isUndefined(component.template) && angular.isUndefined(component.templateUrl))
+                throw new Error('field template or templateUrl must be defined check setType of ' + JSON.stringify(component));
+            else if (typeof component.transform != "function")
+                throw new Error("field must have a transform function check setType of " + JSON.stringify(component));
         }
+
         return {
             /*
             Takes directive definition object with extra properties and saves it to a hashmap. 
