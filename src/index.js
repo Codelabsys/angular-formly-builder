@@ -1,7 +1,7 @@
 (function (formBuilder) {
     /**
-     * This directive is responsible for adding drag and drop functionality and sending the
-     *  `builderDropzone` the required object in order to identify the dropped item. 
+     *  This directive is responsible for adding drag and drop functionality and sending the
+     *  builderDropzone` the required object in order to identify the dropped item. 
      */
     formBuilder.directive('builderFieldType', ['$compile', function ($compile) {
         return {
@@ -12,6 +12,7 @@
             controller: function ($scope) {
                 // check if it was defined.  If not - set a default
                 $scope.item = $scope.item || { name: $scope.name };
+
             },
             compile: function (tElement, attrs, transclude) {
                 tElement.removeAttr('builder-field-type');
@@ -208,13 +209,24 @@
                     });
 
                 scope.$on('$destroy', function () {
-                    scope.onFieldRemoved();//callback
+                    scope.onFieldRemoved();  //callback
                 });
 
             },
             controller: function ($scope) {
+
                 let fieldConfig = builderConfig.getType($scope.item.name);
-                $scope.formField = fieldConfig.transform($scope.item, $scope);
+
+                $scope.transform = function (item, formField) {
+                    $scope.formField = fieldConfig.transform(item, formField);
+                }
+
+                $scope.transform($scope.item, $scope.formField);
+
+                $scope.getComponent = function () {
+                    return { item: $scope.item, formField: $scope.formField, };
+                }
+
                 if (fieldConfig.controller)
                     invokeController(fieldConfig.controller, $scope);
             },
