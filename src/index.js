@@ -106,9 +106,9 @@
             $controller(controller, { $scope: scope })
         }
 
-        function freezObjectProperty(object, propertyName, value) {
+        function freezObjectProperty(object, propertyName) {
             Object.defineProperty(object, propertyName, {
-                value: value,
+                value: object[propertyName],
                 writable: false,
                 enumerable: true,
                 configurable: true
@@ -126,7 +126,8 @@
                 onFieldRemoved: '&'
             },
             link: function (scope, elem, attr) {
-                freezObjectProperty(scope.item, "name", scope.item.name);
+                //The field name should be immutable to disallow extrnal code from modifying it
+                freezObjectProperty(scope.item, "name");
                 let fieldConfig = builderConfig.getType(scope.item.name);
                 let args = arguments;
                 let that = this;
@@ -141,15 +142,15 @@
                 });
 
                 scope.$on('$destroy', function () {
-                    console.log("destroy");
-                    console.log(scope);
                     scope.onFieldRemoved();
                 });
             },
             controller: function ($scope) {
-                $scope.formField = { "key": Math.random(), "type": $scope.item.name };
-
                 let fieldConfig = builderConfig.getType($scope.item.name);
+                
+                //initialize the formField by trasforming the item object
+                //$scope.formField = fieldConfig.generateFormField();
+
                 invokeController(fieldConfig.controller, $scope);
             },
         };
