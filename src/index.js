@@ -12,7 +12,6 @@
             controller: function ($scope) {
                 // check if it was defined.  If not - set a default
                 $scope.item = $scope.item || { name: $scope.name };
-
             },
             compile: function (tElement, attrs, transclude) {
                 tElement.removeAttr('builder-field-type');
@@ -39,22 +38,21 @@
                 formFields: '=',
                 shouldUpdate: '&?'
             },
-            template: '<builder-dropzone-field ng-repeat="item in builderList" item="item" form-field="formFields[$index]" dnd-draggable="item" dnd-type="item.name"  dnd-moved="builderList.splice($index, 1)" on-field-removed="onItemRemoved($index)" dnd-effect-allowed="move" />',
+            template: '<builder-dropzone-field  ng-repeat="item in builderList" item="item" form-field="formFields[$index]" dnd-draggable="item" dnd-type="item.name"  dnd-moved="builderList.splice($index, 1)" on-field-removed="onItemRemoved($index)" on-item-added="onItemAdded($index)" dnd-effect-allowed="move" />',
             controller: function ($scope) {
                 // check if it was defined.  If not - set a default
                 $scope.builderList = $scope.builderList || [];
-                $scope.formFields = new Array($scope.builderList.length);
+                $scope.formFields = $scope.formFields ? $scope.formFields : new Array($scope.builderList.length);
 
                 //  this adds the form field to `formFields` when the field is dropped to the dropzone 
                 //  the added form field is intitialized by undefined 
                 //  and the `builder-dropzone-field` is resposible for updating this value
                 //  runs a callback to determine whether an item can be added to the drop zone. If it returns true then the item will be added
-                $scope.onItemAdded = function (event, index, item, external, type) {
+                $scope.onItemDropped = function (event, index, item, external, type) {
                     let canAddItem = true;
                     if (typeof $scope.shouldUpdate == "function")
                         canAddItem = $scope.shouldUpdate({ children: $scope.builderList, nextComponent: item });
                     if (canAddItem) {
-                        $scope.formFields.splice(index, 0, undefined)
                         return item;
                     } else {
                         // stop Drop event propagation to higher drop zones
@@ -70,13 +68,18 @@
                  *`formFields` needs to be updated by removing the corresponding field from it
                  */
                 $scope.onItemRemoved = function (index) {
-                    $scope.formFields.splice(index, 1)
+                    $scope.formFields.splice(index, 1);
                 };
+
+                $scope.onItemAdded = function (index) {
+                    $scope.formFields.splice(index, 0, {});
+                    return $scope.formFields[index];
+                }
             },
             compile: function (tElement, attrs, transclude) {
                 tElement.removeAttr('builder-dropzone');
                 tElement.attr('dnd-list', 'builderList');
-                tElement.attr('dnd-drop', 'onItemAdded(event, index, item, external, type)');
+                tElement.attr('dnd-drop', 'onItemDropped(event, index, item, external, type)');
 
 
                 return {
@@ -189,11 +192,12 @@
             scope: {
                 item: '=',
                 formField: '=',
-                onFieldRemoved: '&'
+                onFieldRemoved: '&',
+                onItemAdded: '&'
             },
             link: function (scope, elem, attr) {
                 //The field name should be immutable to disallow extrnal code from modifying it
-                freezObjectProperty(scope.item, "name");
+                //freezObjectProperty(scope.item, "name");
                 let fieldConfig = builderConfig.getType(scope.item.name);
                 let args = arguments;
                 let that = this;
@@ -210,23 +214,27 @@
                     });
 
                 scope.$on('$destroy', function () {
-                    scope.onFieldRemoved();  //callback
+                    scope.onFieldRemoved();
                 });
 
             },
-            controller: function ($scope) {
+            controller: function ($scope, $timeout) {
+                console.log($scope.formField);
                 let fieldConfig = builderConfig.getType($scope.item.name);
-
+                let xxx = $scope.onItemAdded();
                 // add check api here
                 $scope.transform = function (component) {
                     let transformedComponent = fieldConfig.transform(component);
-                    $scope.formField = transformedComponent && transformedComponent.formField ? transformedComponent.formField : {};
-                    $scope.item = transformedComponent && transformedComponent.item ? transformedComponent.item : {};
+
+                    let item = transformedComponent && transformedComponent.item ? transformedComponent.item : {};
+                    Object.assign($scope.item, item);
+
+                    let formField = transformedComponent && transformedComponent.formField ? transformedComponent.formField : {};
+                    Object.assign(xxx, formField);
                 }
+                $scope.transform({ item: $scope.item, formField: xxx });
 
-                $scope.transform({ item: $scope.item, formField: $scope.formField });
-
-                if (fieldConfig.controller) 
+                if (fieldConfig.controller)
                     invokeController(fieldConfig.controller, $scope);
             },
         };
