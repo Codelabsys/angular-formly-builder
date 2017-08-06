@@ -38,12 +38,12 @@
                 formFields: '=',
                 shouldUpdate: '&?'
             },
-            template: '<builder-dropzone-field ng-repeat="item in builderList" item="item" form-field="formFields[$index] ? formFields[$index] : formFields[$index] = {};" dnd-draggable="item" dnd-type="item.name" dnd-moved="onItemRemoved($index)" dnd-effect-allowed="move" />',
+            template: '<builder-dropzone-field ng-repeat="item in builderList" item="item" form-field="formFields[$index]" dnd-draggable="item" dnd-type="item.name" dnd-moved="onItemRemoved($index)" dnd-effect-allowed="move" />',
             controller: function ($scope, $element, $attrs) {
                 // check if it was defined.  If not - set a default
                 $scope.builderList = $scope.builderList || [];
-                $scope.formFields = $scope.formFields ? $scope.formFields : new Array($scope.builderList.length);
-
+                //init formFields to match builderList
+                $scope.formFields = new Array($scope.builderList.length).fill({});
                 //  this adds the form field to `formFields` when the field is dropped to the dropzone 
                 //  the added form field is intitialized by undefined 
                 //  and the `builder-dropzone-field` is resposible for updating this value
@@ -53,6 +53,7 @@
                     if ($attrs["shouldUpdate"] && typeof $scope.shouldUpdate == "function")
                         canAddItem = $scope.shouldUpdate({ children: $scope.builderList, nextComponent: item });
                     if (canAddItem) {
+                        //when a new item is added to builderList a placholder  object is created 
                         $scope.formFields.splice(index, 0, {});
                         return item;
                     } else {
@@ -189,7 +190,6 @@
             scope: {
                 item: '=',
                 formField: '=',
-                onFieldRemoved: '&',
             },
             link: function (scope, elem, attr) {
                 //The field name should be immutable to disallow extrnal code from modifying it
@@ -197,7 +197,6 @@
                 let fieldConfig = builderConfig.getType(scope.item.name);
                 let args = arguments;
                 let that = this;
-
                 //link template with scope and invoke custome link function
                 getFieldTemplate(fieldConfig)
                     .then(transcludeInWrappers(fieldConfig))
@@ -206,13 +205,12 @@
                         elem.append(compieldHtml);
                     }).then(invokeLink(fieldConfig, that, args))
                     .catch(function (error) {
-                        throw new Error('There was a problem setting the template for this field ' + error + " " + JSON.stringify(fieldConfig));
+                        throw new Error('Faild to set template for this field ' + error + " " + JSON.stringify(fieldConfig));
                     });
-
             },
             controller: function ($scope) {
                 let fieldConfig = builderConfig.getType($scope.item.name);
-                // add check api here
+                
                 $scope.transform = function (component) {
                     let transformedComponent = fieldConfig.transform(component);
 
