@@ -23,8 +23,8 @@ Use this directive to make your **Html** element a drop zone area.
 
 > **Attributes**
 
-> -  **builder-list:** Optional attribute [Array]. Dropped fields will be  added to the passed list. If passed with value the drop zone will be initialized with those fields. can be used to implement functionalities such as **save and load**. 
-> -  **form-fields:** Optional attribute [Array]. The builder-list will have the built in object hierarchy and properties used for drawing however if you want to modify this hierarchy and add additional properties see **transform function** the customized hierarchy will be added to this list. This can be helpful if you want to export to [angular-formly](http://angular-formly.com/#/)  for example.
+> -  **builder-list:** Optional attribute [Array]. Dropped fields will be  added to the passed list. If pass a list with values the drop zone will be initialized with those fields. can be used to implement functionalities such as **save and load**. 
+> -  **form-fields:** Optional attribute [Array]. The builder-list will have the built in object hierarchy and properties used for drawing however if you want to modify this hierarchy and add additional properties (see **transform function**). The customized hierarchy will be added to this list. This can be helpful if you want to export to [angular-formly](http://angular-formly.com/#/)  for example.
 > - **should-update:** Optional callback that will be invoked when a new item is dropped inside the drop zone returning true will allow the element to be added to the drop zone. The callback will have the following parameters **children:** current items inside drop zone and **nextComponent:** the new item.
 
 ----------
