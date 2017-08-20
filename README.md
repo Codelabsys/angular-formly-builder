@@ -5,7 +5,7 @@ This library can help you create your GUI form builder easily.
 
 ----------
 
-Directive
+Directives
 -------------------
 
 ### field-type
