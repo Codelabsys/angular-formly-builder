@@ -8,7 +8,7 @@ This library can help you create your GUI form builder easily.
 Directive
 -------------------
 
-###field-type
+### field-type
 Use this directive to make your **HTML** element  draggable 
 
 > **Attributes**
@@ -17,7 +17,7 @@ Use this directive to make your **HTML** element  draggable
 
 ----------
 
-###builder-dropzone
+### builder-dropzone
 
 Use this directive to make your **Html** element a drop zone area.
 
@@ -33,7 +33,7 @@ Configuration
 -------------------
 Each type should have a **config** object that defines how it behaves and look inside the drop zone and its object shape inside form-field list if passed. The config object is almost similar to **directive definition object (DDO)**  but with some additional properties. 
 
-###builderConfig service 
+### builderConfig service 
 builderConfig have a singe function called setType that takes a object with the following properties
 
 Property name     | Value | Description 
