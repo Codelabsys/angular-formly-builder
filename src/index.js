@@ -34,8 +34,7 @@
             restrict: 'AE',
             scope: {
                 builderList: '=?',
-                builderName: '@',
-                formFields: '=',
+                formFields: '=?',
                 shouldUpdate: '&?'
             },
             template: '<builder-dropzone-field ng-repeat="item in builderList" item="item" form-field="formFields[$index]" dnd-draggable="item" dnd-type="item.name" dnd-moved="onItemRemoved($index)" dnd-effect-allowed="move" />',
@@ -138,8 +137,9 @@
                 return templatePromise;
             else {
                 const httpOptions = { cache: $templateCache };
-                return templatePromise.then((url) => $http.get(url, httpOptions))
-                    .then(function (response) {
+                return templatePromise.then(function (url) {
+                    return $http.get(url, httpOptions);
+                }).then(function (response) {
                         return response.data;
                     })
                     .catch(function (error) {
@@ -210,17 +210,18 @@
             },
             controller: function ($scope) {
                 let fieldConfig = builderConfig.getType($scope.item.name);
-                
-                $scope.transform = function (component) {
-                    let transformedComponent = fieldConfig.transform(component);
 
-                    let item = transformedComponent && transformedComponent.item ? transformedComponent.item : {};
-                    Object.assign($scope.item, item);
+                $scope.transform = function (builderItem, formField) {
+                    let transformedComponent = fieldConfig.transform(builderItem, formField );
 
-                    let formField = transformedComponent && transformedComponent.formField ? transformedComponent.formField : {};
-                    Object.assign($scope.formField, formField);
+                    let transformedItem = transformedComponent && transformedComponent.builderItem ? transformedComponent.builderItem : {};
+                    Object.assign($scope.item, transformedItem);
+
+                    let transformedFormField = transformedComponent && transformedComponent.formField ? transformedComponent.formField : {};
+                    Object.assign($scope.formField, transformedFormField);
                 }
-                $scope.transform({ item: $scope.item, formField: $scope.formField });
+
+                $scope.transform($scope.item, $scope.formField);
 
                 if (fieldConfig.controller)
                     invokeController(fieldConfig.controller, $scope);
