@@ -43,7 +43,7 @@ templateUrl | url,required | the html template that will represent the field ins
 wrapper | array, optional | array of templateUrl that will wrapper your main html templates.
 link | function, optional |similar to directive's link function
 controller | function, optional	| similar to directive's controller function
-transform | function, optional | callback that receivers an object that contains an item object (internal filed properties ). You can define an object called formField and return your custom field definition. **used along builder-dropzone's form-fields**. **The return value should be an object that contains item and formField**.
+transform | function, optional | callback that receives two arguments (builderItem, formField). You should return and object with the transformed `formField` and `builderItem`. **used along builder-dropzone's form-fields**. **The return value should be an object that contains builderItem and formField**.
 
 > **Note:** item object contains the name property of the field and other properties that controllers behavior and presentation of the field.
 
