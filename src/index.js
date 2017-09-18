@@ -211,10 +211,10 @@
             controller: function ($scope) {
                 let fieldConfig = builderConfig.getType($scope.item.name);
 
-                $scope.transform = function (builderItem, formField) {
-                    let transformedComponent = fieldConfig.transform(builderItem, formField );
+                $scope.transform = function (item, formField) {
+                    let transformedComponent = fieldConfig.transform(item, formField );
 
-                    let transformedItem = transformedComponent && transformedComponent.builderItem ? transformedComponent.builderItem : {};
+                    let transformedItem = transformedComponent && transformedComponent.item ? transformedComponent.item : {};
                     Object.assign($scope.item, transformedItem);
 
                     let transformedFormField = transformedComponent && transformedComponent.formField ? transformedComponent.formField : {};
