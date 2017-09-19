@@ -140,8 +140,8 @@
                 return templatePromise.then(function (url) {
                     return $http.get(url, httpOptions);
                 }).then(function (response) {
-                        return response.data;
-                    })
+                    return response.data;
+                })
                     .catch(function (error) {
                         throw new Error('can not load template url ' + template + ' ' + error);
                     });
@@ -212,7 +212,7 @@
                 let fieldConfig = builderConfig.getType($scope.formBuilderField.name);
 
                 $scope.transformFormField = function (formBuilderField, formViewerField) {
-                    let transformedComponent = fieldConfig.transformFormField(formBuilderField, formViewerField );
+                    let transformedComponent = fieldConfig.transformFormField(formBuilderField, formViewerField);
 
                     let transformedFormBuilderField = transformedComponent && transformedComponent.formBuilderField ? transformedComponent.formBuilderField : {};
                     Object.assign($scope.formBuilderField, transformedFormBuilderField);
@@ -220,11 +220,10 @@
                     let transformedFormViewerField = transformedComponent && transformedComponent.formViewerField ? transformedComponent.formViewerField : {};
                     Object.assign($scope.formViewerField, transformedFormViewerField);
                 }
-
-                $scope.transformFormField($scope.formBuilderField, $scope.formViewerField);
-
                 if (fieldConfig.controller)
                     invokeController(fieldConfig.controller, $scope);
+                
+                $scope.transformFormField($scope.formBuilderField, $scope.formViewerField);
             },
         };
 
