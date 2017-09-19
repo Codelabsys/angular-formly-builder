@@ -3,7 +3,7 @@
      *  This directive is responsible for adding drag and drop functionality and sending the
      *  builderDropzone` the required object in order to identify the dropped item. 
      */
-    formBuilder.directive('builderToolboxItem', ['$compile', function ($compile) {
+    formBuilder.directive('builderToolboxFieldType', ['$compile', function ($compile) {
         return {
             restrict: 'A',
             scope: {
@@ -14,7 +14,7 @@
                 $scope.item = $scope.item || { name: $scope.name };
             },
             compile: function (tElement, attrs, transclude) {
-                tElement.removeAttr('builder-toolbox-item');
+                tElement.removeAttr('builder-toolbox-field-type');
                 tElement.attr('dnd-draggable', 'item');
                 tElement.attr('dnd-effect-allowed', 'move');
                 tElement.attr('dnd-type', 'name');
@@ -33,27 +33,27 @@
         return {
             restrict: 'AE',
             scope: {
-                builderFormFields: '=?',
-                viewerFormFields: '=?',
+                formBuilderFields: '=?',
+                formViewerFields: '=?',
                 shouldUpdate: '&?'
             },
-            template: '<builder-dropzone-field ng-repeat="formBuilderField in builderFormFields" form-builder-field="formBuilderField" form-viewer-field="viewerFormFields[$index]" dnd-draggable="formBuilderField" dnd-type="formBuilderField.name" dnd-moved="onItemRemoved($index)" dnd-effect-allowed="move" />',
+            template: '<builder-dropzone-field ng-repeat="formBuilderField in formBuilderFields" form-builder-field="formBuilderField" form-viewer-field="formViewerFields[$index]" dnd-draggable="formBuilderField" dnd-type="formBuilderField.name" dnd-moved="onItemRemoved($index)" dnd-effect-allowed="move" />',
             controller: function ($scope, $element, $attrs) {
                 // check if it was defined.  If not - set a default
-                $scope.builderFormFields = $scope.builderFormFields || [];
-                //init viewerFormFields to match builderFormFields
-                $scope.viewerFormFields = new Array($scope.builderFormFields.length).fill({});
-                //  this adds the form field to `viewerFormFields` when the field is dropped to the dropzone 
+                $scope.formBuilderFields = $scope.formBuilderFields || [];
+                //init formViewerFields to match formBuilderFields
+                $scope.formViewerFields = new Array($scope.formBuilderFields.length).fill({});
+                //  this adds the form field to `formViewerFields` when the field is dropped to the dropzone 
                 //  the added form field is intitialized by undefined 
                 //  and the `builder-dropzone-field` is resposible for updating this value
                 //  runs a callback to determine whether an item can be added to the drop zone. If it returns true then the item will be added
                 $scope.onItemDropped = function (event, index, item, external, type) {
                     let canAddItem = true;
                     if ($attrs["shouldUpdate"] && typeof $scope.shouldUpdate == "function")
-                        canAddItem = $scope.shouldUpdate({ children: $scope.builderFormFields, nextComponent: item });
+                        canAddItem = $scope.shouldUpdate({ children: $scope.formBuilderFields, nextComponent: item });
                     if (canAddItem) {
-                        //when a new item is added to builderFormFields a placholder  object is created 
-                        $scope.viewerFormFields.splice(index, 0, {});
+                        //when a new item is added to formBuilderFields a placholder  object is created 
+                        $scope.formViewerFields.splice(index, 0, {});
                         return item;
                     } else {
                         // stop Drop event propagation to higher drop zones
@@ -65,18 +65,18 @@
 
                 /** 
                  *this function is invoked when the `builder-dropzone-field` is destroyed
-                 *the `builder-dropzone-field` is mainly destoryed when the item (field) is removed from the `builderFormFields`
-                 *`viewerFormFields` needs to be updated by removing the corresponding field from it
+                 *the `builder-dropzone-field` is mainly destoryed when the item (field) is removed from the `formBuilderFields`
+                 *`formViewerFields` needs to be updated by removing the corresponding field from it
                  */
                 $scope.onItemRemoved = function (index) {
-                    $scope.builderFormFields.splice(index, 1);
-                    $scope.viewerFormFields.splice(index, 1);
+                    $scope.formBuilderFields.splice(index, 1);
+                    $scope.formViewerFields.splice(index, 1);
                 }
 
             },
             compile: function (tElement, attrs, transclude) {
                 tElement.removeAttr('builder-dropzone');
-                tElement.attr('dnd-list', 'builderFormFields');
+                tElement.attr('dnd-list', 'formBuilderFields');
                 tElement.attr('dnd-drop', 'onItemDropped(event, index, item, external, type)');
 
                 return {
