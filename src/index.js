@@ -288,4 +288,4 @@
         };
     });
 
-})(angular.module('formBuilder', []));
+})(angular.module('formBuilder', ['dndLists']));
