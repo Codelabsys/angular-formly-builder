@@ -3,7 +3,7 @@
      *  This directive is responsible for adding drag and drop functionality and sending the
      *  builderDropzone` the required object in order to identify the dropped item. 
      */
-    formBuilder.directive('builderFieldType', ['$compile', function ($compile) {
+    formBuilder.directive('builderToolboxItem', ['$compile', function ($compile) {
         return {
             restrict: 'A',
             scope: {
@@ -14,7 +14,7 @@
                 $scope.item = $scope.item || { name: $scope.name };
             },
             compile: function (tElement, attrs, transclude) {
-                tElement.removeAttr('builder-field-type');
+                tElement.removeAttr('builder-toolbox-item');
                 tElement.attr('dnd-draggable', 'item');
                 tElement.attr('dnd-effect-allowed', 'move');
                 tElement.attr('dnd-type', 'name');
@@ -33,27 +33,27 @@
         return {
             restrict: 'AE',
             scope: {
-                builderList: '=?',
-                formFields: '=?',
+                builderFormFields: '=?',
+                viewerFormFields: '=?',
                 shouldUpdate: '&?'
             },
-            template: '<builder-dropzone-field ng-repeat="item in builderList" item="item" form-field="formFields[$index]" dnd-draggable="item" dnd-type="item.name" dnd-moved="onItemRemoved($index)" dnd-effect-allowed="move" />',
+            template: '<builder-dropzone-field ng-repeat="item in builderFormFields" item="item" form-field="viewerFormFields[$index]" dnd-draggable="item" dnd-type="item.name" dnd-moved="onItemRemoved($index)" dnd-effect-allowed="move" />',
             controller: function ($scope, $element, $attrs) {
                 // check if it was defined.  If not - set a default
-                $scope.builderList = $scope.builderList || [];
-                //init formFields to match builderList
-                $scope.formFields = new Array($scope.builderList.length).fill({});
-                //  this adds the form field to `formFields` when the field is dropped to the dropzone 
+                $scope.builderFormFields = $scope.builderFormFields || [];
+                //init viewerFormFields to match builderFormFields
+                $scope.viewerFormFields = new Array($scope.builderFormFields.length).fill({});
+                //  this adds the form field to `viewerFormFields` when the field is dropped to the dropzone 
                 //  the added form field is intitialized by undefined 
                 //  and the `builder-dropzone-field` is resposible for updating this value
                 //  runs a callback to determine whether an item can be added to the drop zone. If it returns true then the item will be added
                 $scope.onItemDropped = function (event, index, item, external, type) {
                     let canAddItem = true;
                     if ($attrs["shouldUpdate"] && typeof $scope.shouldUpdate == "function")
-                        canAddItem = $scope.shouldUpdate({ children: $scope.builderList, nextComponent: item });
+                        canAddItem = $scope.shouldUpdate({ children: $scope.builderFormFields, nextComponent: item });
                     if (canAddItem) {
-                        //when a new item is added to builderList a placholder  object is created 
-                        $scope.formFields.splice(index, 0, {});
+                        //when a new item is added to builderFormFields a placholder  object is created 
+                        $scope.viewerFormFields.splice(index, 0, {});
                         return item;
                     } else {
                         // stop Drop event propagation to higher drop zones
@@ -65,18 +65,18 @@
 
                 /** 
                  *this function is invoked when the `builder-dropzone-field` is destroyed
-                 *the `builder-dropzone-field` is mainly destoryed when the item (field) is removed from the `builderList`
-                 *`formFields` needs to be updated by removing the corresponding field from it
+                 *the `builder-dropzone-field` is mainly destoryed when the item (field) is removed from the `builderFormFields`
+                 *`viewerFormFields` needs to be updated by removing the corresponding field from it
                  */
                 $scope.onItemRemoved = function (index) {
-                    $scope.builderList.splice(index, 1);
-                    $scope.formFields.splice(index, 1);
+                    $scope.builderFormFields.splice(index, 1);
+                    $scope.viewerFormFields.splice(index, 1);
                 }
 
             },
             compile: function (tElement, attrs, transclude) {
                 tElement.removeAttr('builder-dropzone');
-                tElement.attr('dnd-list', 'builderList');
+                tElement.attr('dnd-list', 'builderFormFields');
                 tElement.attr('dnd-drop', 'onItemDropped(event, index, item, external, type)');
 
                 return {
@@ -192,7 +192,7 @@
                 formField: '=',
             },
             link: function (scope, elem, attr) {
-                //The field name should be immutable to disallow extrnal code from modifying it
+                //The field name should be immutable to disallow extrnal code from modifying it but currently this behaviour is not implmented
                 //freezObjectProperty(scope.item, "name");
                 let fieldConfig = builderConfig.getType(scope.item.name);
                 let args = arguments;
@@ -211,8 +211,8 @@
             controller: function ($scope) {
                 let fieldConfig = builderConfig.getType($scope.item.name);
 
-                $scope.transform = function (item, formField) {
-                    let transformedComponent = fieldConfig.transform(item, formField );
+                $scope.transformFormField = function (viewerFormField, builderFormField) {
+                    let transformedComponent = fieldConfig.transformFormField(viewerFormField, builderFormField );
 
                     let transformedItem = transformedComponent && transformedComponent.item ? transformedComponent.item : {};
                     Object.assign($scope.item, transformedItem);
@@ -221,7 +221,7 @@
                     Object.assign($scope.formField, transformedFormField);
                 }
 
-                $scope.transform($scope.item, $scope.formField);
+                $scope.transformFormField($scope.item, $scope.formField);
 
                 if (fieldConfig.controller)
                     invokeController(fieldConfig.controller, $scope);
@@ -257,8 +257,8 @@
                 throw new Error('field name must be defined check setType of ' + JSON.stringify(component));
             else if (angular.isUndefined(component.template) && angular.isUndefined(component.templateUrl))
                 throw new Error('field template or templateUrl must be defined check setType of ' + JSON.stringify(component));
-            else if (typeof component.transform != "function")
-                throw new Error("field must have a transform function check setType of " + JSON.stringify(component));
+            else if (typeof component.transformFormField != "function")
+                throw new Error("field must have a transformFormField function check setType of " + JSON.stringify(component));
         }
 
         return {
