@@ -37,7 +37,7 @@
                 viewerFormFields: '=?',
                 shouldUpdate: '&?'
             },
-            template: '<builder-dropzone-field ng-repeat="item in builderFormFields" item="item" form-field="viewerFormFields[$index]" dnd-draggable="item" dnd-type="item.name" dnd-moved="onItemRemoved($index)" dnd-effect-allowed="move" />',
+            template: '<builder-dropzone-field ng-repeat="formBuilderField in builderFormFields" form-builder-field="formBuilderField" form-viewer-field="viewerFormFields[$index]" dnd-draggable="formBuilderField" dnd-type="formBuilderField.name" dnd-moved="onItemRemoved($index)" dnd-effect-allowed="move" />',
             controller: function ($scope, $element, $attrs) {
                 // check if it was defined.  If not - set a default
                 $scope.builderFormFields = $scope.builderFormFields || [];
@@ -188,13 +188,13 @@
         return {
             restrict: 'AE',
             scope: {
-                item: '=',
-                formField: '=',
+                formBuilderField: '=',
+                formViewerField: '=',
             },
             link: function (scope, elem, attr) {
                 //The field name should be immutable to disallow extrnal code from modifying it but currently this behaviour is not implmented
                 //freezObjectProperty(scope.item, "name");
-                let fieldConfig = builderConfig.getType(scope.item.name);
+                let fieldConfig = builderConfig.getType(scope.formBuilderField.name);
                 let args = arguments;
                 let that = this;
                 //link template with scope and invoke custome link function
@@ -209,19 +209,19 @@
                     });
             },
             controller: function ($scope) {
-                let fieldConfig = builderConfig.getType($scope.item.name);
+                let fieldConfig = builderConfig.getType($scope.formBuilderField.name);
 
-                $scope.transformFormField = function (viewerFormField, builderFormField) {
-                    let transformedComponent = fieldConfig.transformFormField(viewerFormField, builderFormField );
+                $scope.transformFormField = function (formBuilderField, formViewerField) {
+                    let transformedComponent = fieldConfig.transformFormField(formBuilderField, formViewerField );
 
-                    let transformedItem = transformedComponent && transformedComponent.item ? transformedComponent.item : {};
-                    Object.assign($scope.item, transformedItem);
+                    let transformedFormBuilderField = transformedComponent && transformedComponent.formBuilderField ? transformedComponent.formBuilderField : {};
+                    Object.assign($scope.formBuilderField, transformedFormBuilderField);
 
-                    let transformedFormField = transformedComponent && transformedComponent.formField ? transformedComponent.formField : {};
-                    Object.assign($scope.formField, transformedFormField);
+                    let transformedFormViewerField = transformedComponent && transformedComponent.formViewerField ? transformedComponent.formViewerField : {};
+                    Object.assign($scope.formViewerField, transformedFormViewerField);
                 }
 
-                $scope.transformFormField($scope.item, $scope.formField);
+                $scope.transformFormField($scope.formBuilderField, $scope.formViewerField);
 
                 if (fieldConfig.controller)
                     invokeController(fieldConfig.controller, $scope);
